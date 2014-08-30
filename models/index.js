@@ -28,6 +28,7 @@ var Schema = mongoose.Schema;
 
 var ModelSchema = Schema({
   name: String,
+  image: String,
   aliases: String,
   model_rank: Number,
   rating: Number,

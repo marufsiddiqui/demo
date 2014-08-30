@@ -2,6 +2,8 @@ var tungus = require('tungus');
 var mongoose = require('mongoose');
 var _ = require('lodash');
 var async = require('async');
+var fs = require('fs');
+var request = require('request');
 require('./models');
 var Model = mongoose.model('Model');
 var Cron = mongoose.model('Cron');
@@ -103,13 +105,41 @@ function _reloadFromServer() {
 function main() {
   Model.find(function (err, docs) {
     console.log(docs.length);
-    /*async.eachLimit(docs, 10, updateOne, function(e){
+    async.eachLimit(docs, 10, _getImg, function(e){
       if (e)
       console.log(e);
       else 
         console.log('done');
-    })*/
+    })
   })
+}
+
+function _getImg(model, cb) {
+  var url = model.url;
+  var base = url.replace('index.html', '');
+  console.log('Now scarapping ' + url);
+
+  scraperjs.StaticScraper.create(url)
+    .scrape(function ($) {
+      var $img = $('#mmimg');
+      if ($img.length) {
+        return $img.attr('src');
+      } else {
+        return null;
+      }
+    }, function (imgSrc) {
+      var model = {};
+      model.image = imgSrc;
+      model.lastVisited = Date.now();
+      model.lastStatus = true;
+      Model.findOneAndUpdate({url: url}, model, function (err, doc) {
+        if (err) {
+          console.log(err);
+        }
+        console.log(doc);
+        cb();
+      })
+    });
 }
 
 function _test() {
