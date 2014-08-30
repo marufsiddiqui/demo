@@ -1,6 +1,7 @@
 var tungus = require('tungus');
 var mongoose = require('mongoose');
 var _ = require('lodash');
+var async = require('async');
 require('./models');
 var Model = mongoose.model('Model');
 var Cron = mongoose.model('Cron');
@@ -9,7 +10,8 @@ mongoose.connect('tingodb://' + __dirname + '/data');
 
 var scraperjs = require('scraperjs');
 
-function updateOne(url) {
+function updateOne(model, cb) {
+  var url = model.url;
   console.log('Now scarapping ' + url);
 
   scraperjs.StaticScraper.create(url)
@@ -27,11 +29,11 @@ function updateOne(url) {
 
         if (prop === 'model_rankrating:') {
           txt = $this.text().trim().match(/(\d+\.?\d+)/ig);
-          formattedData.model_rank = txt[0];
-          formattedData.rating = txt[1];
+          formattedData.model_rank = txt && txt[0] ? txt[0]: 9999;
+          formattedData.rating = txt && txt[1] ? txt[1]: 0;;
         } else if (prop === 'birthdate') {
           txt = $this.find('script').text().match(/\(([^)]+)\)/);
-          formattedData[prop] = txt[1];
+          formattedData[prop] = txt ? txt[1] : new Date();
         } else if (prop === 'biography') {
           formattedData[prop] = $this.next().html();
         } else if (prop === 'categories' || prop === 'appearances') {
@@ -65,6 +67,7 @@ function updateOne(url) {
           console.log(err);
         }
         console.log(doc);
+        cb();
       })
     });
 }
@@ -100,7 +103,12 @@ function _reloadFromServer() {
 function main() {
   Model.find(function (err, docs) {
     console.log(docs.length);
-
+    async.eachLimit(docs, 10, updateOne, function(e){
+      if (e)
+      console.log(e);
+      else 
+        console.log('done');
+    })
   })
 }
 
