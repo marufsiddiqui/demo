@@ -103,12 +103,12 @@ function _reloadFromServer() {
 function main() {
   Model.find(function (err, docs) {
     console.log(docs.length);
-    async.eachLimit(docs, 10, updateOne, function(e){
+    /*async.eachLimit(docs, 10, updateOne, function(e){
       if (e)
       console.log(e);
       else 
         console.log('done');
-    })
+    })*/
   })
 }
 
