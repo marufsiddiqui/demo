@@ -103,15 +103,36 @@ function _reloadFromServer() {
 }
 
 function main() {
-  Model.find(function (err, docs) {
+  Model.find().limit(1).exec(function (err, docs) {
     console.log(docs.length);
-    async.eachLimit(docs, 10, _getImg, function(e){
+    async.eachLimit(docs, 10, _downloadImage, function(e){
       if (e)
       console.log(e);
       else 
         console.log('done');
     })
   })
+}
+
+function _downloadImage(model, cb) {
+  var url = model.url;
+  var base = url.replace('index.html', '')
+  var subBase = base.replace(BASE_URL, '');
+  console.log('Now scarapping ' + url);
+
+  scraperjs.StaticScraper.create(url)
+    .scrape(function ($) {
+      var $img = $('#mmimg');
+      if ($img.length) {
+        return $img.attr('src');
+      } else {
+        return null;
+      }
+    }, function (imgSrc) {
+      var fileName = './images/' + subBase + imgSrc;
+      request(base + imgSrc).pipe(fs.createWriteStream(fileName));
+      console.log(fileName)
+    });
 }
 
 function _getImg(model, cb) {
